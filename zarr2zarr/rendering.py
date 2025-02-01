@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from microfilm.colorify import multichannel_to_rgb
 from matplotlib.colors import LinearSegmentedColormap
 
-from .omezarrmeta import OMEZarrMeta
+from .omezarrmeta import OMEZarrMeta, ZMeta
 from .proxyimage import (
     open_ome_zarr_image,
     get_array_with_min_dimensions,
@@ -55,10 +55,6 @@ class NGFFProxyImage(object):
 
         self.ngff_metadata = ZMeta.parse_obj(self.zgroup.attrs.asdict())
     
-    @classmethod
-    def from_bia_accession_and_image_ids(cls, accession_id, image_id):
-        ome_ngff_rep = get_ome_ngff_rep_by_accession_and_image(accession_id, image_id)
-        return cls(ome_ngff_rep.uri)
 
 
     def _init_darray(self):
