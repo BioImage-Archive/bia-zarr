@@ -11,8 +11,9 @@ app = typer.Typer()
 
 @app.command()
 def info(ome_zarr_uri: str):
-    im = generate_padded_thumbnail_from_ngff_uri(ome_zarr_uri)
-    im.save('foo.png')
+    ome_zarr_image = open_ome_zarr_image(ome_zarr_uri)
+
+    rich.print(ome_zarr_image)
 
 
 @app.command()

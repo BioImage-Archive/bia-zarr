@@ -5,10 +5,10 @@ import numpy as np
 import dask.array as da
 from PIL import Image, ImageOps
 from pydantic import BaseModel
-from microfilm.colorify import multichannel_to_rgb
+from microfilm.colorify import multichannel_to_rgb # type: ignore
 from matplotlib.colors import LinearSegmentedColormap
 
-from .omezarrmeta import OMEZarrMeta, ZMeta
+from .omezarrmeta import OMEZarrMeta
 from .proxyimage import (
     open_ome_zarr_image,
     get_array_with_min_dimensions,
@@ -41,68 +41,6 @@ class RenderingInfo(BaseModel):
     channel_renders: List[ChannelRenderingSettings]
     default_z: Optional[int]
     default_t: Optional[int]
-
-
-class NGFFProxyImage(object):
-    """Helper class for working with remove NGFF images to allow us to access
-    size properties of that image, and fetch multiscale data with specific
-    resolutions."""
-
-    def __init__(self, uri):
-        self.uri = uri
-        self._init_darray()
-        self.zgroup = zarr.open_group(self.uri)
-
-        self.ngff_metadata = ZMeta.parse_obj(self.zgroup.attrs.asdict())
-    
-
-
-    def _init_darray(self):
-        self.darray = dask_array_from_ome_ngff_uri(self.uri)
-
-        # FIXME - this is not a reliable way to determine which dimensions are present in which
-        # order, we should be parsing the NGFF metadata to do this
-
-        if len(self.darray.shape) == 5:
-            size_t, size_c, size_z, size_y, size_x = self.darray.shape
-        elif len(self.darray.shape) == 3:
-            size_z, size_y, size_x = self.darray.shape
-            size_t = 1
-            size_c = 1
-        else:
-            raise Exception("Can't handle this array shape")
-
-        self.size_t = size_t
-        self.size_c = size_c
-        self.size_z = size_z
-        self.size_y = size_y
-        self.size_x = size_x
-
-    def get_dask_array_with_min_dimensions(self, dims):
-        ydim, xdim = dims
-        path_keys = [dataset.path for dataset in self.ngff_metadata.multiscales[0].datasets]
-
-        for path_key in reversed(path_keys):
-            zarr_array = self.zgroup[path_key]
-            if len(self.darray.shape) == 5:
-                _, _, _, size_y, size_x = zarr_array.shape
-            elif len(self.darray.shape) == 3:
-                _, size_y, size_x = zarr_array.shape
-            else:
-                raise Exception("Can't handle this array shape")
-
-            if (size_y >= ydim) and (size_x >= xdim):
-                break
-        
-        return da.from_zarr(zarr_array)
-    
-    @property
-    def all_sizes(self):
-        path_keys = [dataset.path for dataset in self.ngff_metadata.multiscales[0].datasets]
-
-        for path_key in path_keys:
-            zarr_array = self.zgroup[path_key]
-            yield zarr_array.shape
 
 
 class BoundingBox2DRel(BaseModel):
@@ -218,7 +156,7 @@ def pad_to_target_dims(im, target_dims, fill=(0, 0, 0)):
     delta_h = target_dims[1] - h
 
     padding = (delta_w//2, delta_h//2, delta_w-(delta_w//2), delta_h-(delta_h//2))
-    padded_im = ImageOps.expand(im, padding, fill=fill)
+    padded_im = ImageOps.expand(im, padding, fill=fill) # type: ignore
 
     return padded_im
 
@@ -279,13 +217,14 @@ def render_proxy_image(proxy_im, bbrel=DEFAULT_BB, dims=(512, 512), t=None, z=No
 
     # import rich
     darray = reshape_to_5D(array, proxy_im.dimensions)
-    # rich.print(darray, proxy_im.dimensions)
+    # import rich; rich.print(darray, proxy_im.dimensions)
     # import sys; sys.exit(0)
 
+    # FIXME - Z selection will be wrong if we ever change this to not force 5D
     if not t:
         t = proxy_im.sizeT // 2
     if not z:
-        z = proxy_im.sizeZ // 2
+        z = darray.shape[2] // 2
 
     channels_to_render = min(proxy_im.sizeC, len(DEFAULT_COLORS))
     if not mode:
@@ -338,17 +277,17 @@ def render_proxy_image(proxy_im, bbrel=DEFAULT_BB, dims=(512, 512), t=None, z=No
     return im
 
 
-def generate_padded_thumbnail_from_ngff_uri(ngff_uri, dims=(256, 256), autocontrast=True):
+def generate_padded_thumbnail_from_ngff_uri(ome_zarr_uri, dims=(256, 256), autocontrast=True):
     """Given a NGFF URI, generate a 2D thumbnail of the given dimensions."""
 
-    proxy_im = open_ome_zarr_image(ngff_uri)
+    proxy_im = open_ome_zarr_image(ome_zarr_uri)
 
     im = render_proxy_image(proxy_im)
     im.thumbnail(dims)
     im_rgb = im.convert('RGB')
 
     if autocontrast:
-        cim = ImageOps.autocontrast(im_rgb, (0, 1))
+        cim = ImageOps.autocontrast(im_rgb, (0, 1)) # type: ignore
     else:
         cim = im_rgb
         
