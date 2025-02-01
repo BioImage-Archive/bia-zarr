@@ -1,6 +1,8 @@
+from typing import List, Optional
+from pydantic import BaseModel
 import zarr
 
-from .omezarrmeta import OMEZarrMeta
+from .omezarrmeta import OMEZarrMeta, ZMeta
 
 # NOTE - replace with the ome zarr models version once v3 support exists
 def open_ome_zarr(zarr_group: zarr.Group):
