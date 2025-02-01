@@ -10,7 +10,7 @@ from matplotlib.colors import LinearSegmentedColormap
 
 from .omezarrmeta import OMEZarrMeta
 from .proxyimage import (
-    ome_zarr_image_from_ome_zarr_uri,
+    open_ome_zarr_image,
     get_array_with_min_dimensions,
     reshape_to_5D
 )
@@ -345,8 +345,7 @@ def render_proxy_image(proxy_im, bbrel=DEFAULT_BB, dims=(512, 512), t=None, z=No
 def generate_padded_thumbnail_from_ngff_uri(ngff_uri, dims=(256, 256), autocontrast=True):
     """Given a NGFF URI, generate a 2D thumbnail of the given dimensions."""
 
-    # proxy_im = NGFFProxyImage(ngff_uri)
-    proxy_im = ome_zarr_image_from_ome_zarr_uri(ngff_uri)
+    proxy_im = open_ome_zarr_image(ngff_uri)
 
     im = render_proxy_image(proxy_im)
     im.thumbnail(dims)
