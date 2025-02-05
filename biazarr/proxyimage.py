@@ -54,6 +54,7 @@ class OMEZarrImage(BaseModel):
     xy_scaling: float = 1.0
     chunk_scheme: List[int] = []
     shard_scheme: List[int] = []
+    zarr_version: str = ""
     z_scaling: float = 1.0
     path_keys: List[str]= []
         
@@ -141,6 +142,9 @@ def ome_zarr_image_from_zarr_group_and_metadata(
     base_array = zarr_group[base_path_key]
     init_dict['chunk_scheme'] = list(base_array.chunks)
     init_dict['shard_scheme'] = list(base_array.shape) if hasattr(base_array, 'shard_shape') else []
+    
+    # Get zarr version
+    init_dict['zarr_version'] = zarr.__version__
 
     ome_zarr_image = OMEZarrImage(**init_dict)
     
