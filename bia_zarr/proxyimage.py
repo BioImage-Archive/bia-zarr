@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 import dask.array as da
 import zarr
 
-from .omezarrmeta import OMEZarrMeta
+from .omezarrmeta import OMEZarrMeta, DataSet, CoordinateTransformation
 
 
 # FIXME? - should we allow no unit? Propagate unknowns?
@@ -339,3 +339,100 @@ def reshape_to_5D(arr, dimension_str: str):
     reshaped = arr.reshape(new_shape)
     
     return reshaped
+
+
+def generate_dataset_objects_from_scaling(
+    start_scales: list[float],
+    xy_scaling: float,
+    z_scaling: float | None,
+    path_keys: list[str]
+) -> list[DataSet]:
+    """Generate dataset objects using xy and z scaling factors.
+    
+    Args:
+        start_scales: Initial scales for each dimension [t,c,z,y,x]
+        xy_scaling: Scale factor between consecutive levels for x,y dimensions
+        z_scaling: Scale factor between consecutive levels for z dimension
+                  If None, no z scaling is applied
+        path_keys: List of path labels for each resolution level
+        
+    Returns:
+        List of DataSet objects with appropriate scale transformations
+    """
+    n_levels = len(path_keys)
+    
+    # Generate scale factors for each level
+    scale_factors = []
+    for level in range(n_levels):
+        level_factors = [
+            1.0,  # t
+            1.0,  # c
+            z_scaling ** level if z_scaling else 1.0,
+            xy_scaling ** level,
+            xy_scaling ** level
+        ]
+        scale_factors.append(level_factors)
+        
+    return generate_dataset_objects(start_scales, scale_factors, path_keys)
+
+
+def round_to_sigfigs(x: float, sigfigs: int = 3) -> float:
+    """
+    Round a float to a specified number of significant figures.
+
+    Args:
+        x: Number to round
+        sigfigs: Number of significant figures to keep (default 3)
+
+    Returns:
+        Float rounded to specified significant figures
+    """
+    if x == 0:
+        return 0
+    return float(f'{x:.{sigfigs}g}')
+
+
+def generate_dataset_objects(
+    start_scales: list[float],
+    scale_factors: list[list[float]],
+    path_keys: list[str]
+) -> list[DataSet]:
+    """Generate dataset objects with progressive downsampling.
+
+    Args:
+        start_scales: Initial scales for each dimension [t,c,z,y,x]
+        scale_factors: List of scale factors for each resolution level
+                          Each inner list contains factors for [t,c,z,y,x]
+                          Each will be multiplied by scales at that level
+        path_keys: List of path labels for each resolution level
+
+    Returns:
+        List of DataSet objects with appropriate scale transformations
+
+    Raises:
+        ValueError: If input lists have different lengths or invalid values
+    """
+    # Validate inputs
+    if len(scale_factors) != len(path_keys):
+        raise ValueError("Number of downsample factors must match number of path keys")
+    
+    if not all(len(factors) == len(start_scales) for factors in scale_factors):
+        raise ValueError("Each downsample factor must have same length as start_scales")
+
+    datasets = [
+        DataSet(
+            path=path_label,
+            coordinateTransformations=[
+                CoordinateTransformation(
+                    scale = [
+                        round_to_sigfigs(start_scale * scale_factor, 3)
+                        for (start_scale, scale_factor) in zip(start_scales, scale_factors[n])
+                    ],
+                    type="scale"
+                )
+            ]
+        )
+        for n, path_label in enumerate(path_keys)
+    ]
+
+    return datasets
