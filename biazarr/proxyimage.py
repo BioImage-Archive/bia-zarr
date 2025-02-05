@@ -165,7 +165,12 @@ def get_array_with_min_dimensions(ome_zarr_image: OMEZarrImage, dims: tuple):
 
 
 def open_ome_zarr_image(ome_zarr_image_uri: str):
-    zarr_group = zarr.open_group(ome_zarr_image_uri)
+    import fsspec
+    
+    # Use fsspec to handle the URI and ensure proper cleanup
+    fs = fsspec.filesystem('file')
+    store = fs.get_mapper(ome_zarr_image_uri)
+    zarr_group = zarr.open_group(store=store)
 
     ome_zarr_metadata = open_ome_zarr(zarr_group)
 
