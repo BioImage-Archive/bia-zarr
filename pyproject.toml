@@ -1,5 +1,5 @@
 [project]
-name = "zarr2zarr"
+name = "bia-zarr"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -11,12 +11,13 @@ dependencies = [
     "microfilm>=0.3.0",
     "pillow>=11.1.0",
     "pydantic>=2.10.6",
+    "pytest>=8.3.4",
     "requests>=2.32.3",
     "rich>=13.9.4",
     "tensorstore>=0.1.71",
     "typer>=0.15.1",
-    "zarr>=3.0.0",
+    "zarr>=3.0.2",
 ]
 
 [project.scripts]
-zarrtool = "zarr2zarr.cli:app"
+bia-zarr = "bia_zarr.cli:app"
