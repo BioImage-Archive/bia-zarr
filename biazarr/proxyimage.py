@@ -54,7 +54,7 @@ class OMEZarrImage(BaseModel):
     xy_scaling: float = 1.0
     chunk_scheme: List[int] = []
     shard_scheme: List[int] = []
-    zarr_version: str = ""
+    zarr_version: str = Field("", pattern="^[23]$")
     z_scaling: float = 1.0
     path_keys: List[str]= []
         
@@ -143,8 +143,11 @@ def ome_zarr_image_from_zarr_group_and_metadata(
     init_dict['chunk_scheme'] = list(base_array.chunks)
     init_dict['shard_scheme'] = list(base_array.shape) if hasattr(base_array, 'shard_shape') else []
     
-    # Get zarr version
-    init_dict['zarr_version'] = zarr.__version__
+    # Get zarr version from the group
+    zarr_version = zarr_group.attrs.get('zarr_format', None)
+    if zarr_version not in ['2', '3']:
+        raise ValueError(f"Unsupported zarr format version: {zarr_version}")
+    init_dict['zarr_version'] = zarr_version
 
     ome_zarr_image = OMEZarrImage(**init_dict)
     
