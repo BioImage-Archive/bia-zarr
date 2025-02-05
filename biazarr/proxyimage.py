@@ -166,13 +166,14 @@ def get_array_with_min_dimensions(ome_zarr_image: OMEZarrImage, dims: tuple):
 
 def open_ome_zarr_image(ome_zarr_image_uri: str):
     import fsspec
+    from zarr.storage import DirectoryStore
     
     # Use fsspec to handle the URI and ensure proper cleanup
     fs = fsspec.filesystem('file')
     mapper = fs.get_mapper(ome_zarr_image_uri)
     
     # Create a DirectoryStore from the path
-    store = zarr.DirectoryStore(ome_zarr_image_uri)
+    store = DirectoryStore(ome_zarr_image_uri)
     zarr_group = zarr.open_group(store=store)
 
     ome_zarr_metadata = open_ome_zarr(zarr_group)
