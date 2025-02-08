@@ -1,11 +1,77 @@
 import time
 import itertools
 from datetime import timedelta
-
+import numpy as np
 
 import rich
 import zarr
 import tensorstore as ts
+
+def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
+    """Normalize input array to 5D TCZYX format.
+    
+    Args:
+        array: Input array-like object
+        dimension_str: String indicating dimension order (e.g. 'tczyx', 'cyx')
+        
+    Returns:
+        5D array with dimensions ordered as TCZYX, with size 1 for missing dimensions
+    """
+    # Standard order we want
+    target_dims = 'tczyx'
+    
+    # Convert input array to numpy if needed
+    arr = np.asarray(array)
+    
+    # Verify dimension string matches array rank
+    if len(dimension_str) != arr.ndim:
+        raise ValueError(f"Dimension string {dimension_str} does not match array rank {arr.ndim}")
+    
+    # Create mapping of current dimensions to target positions
+    current_to_target = {dim: target_dims.index(dim) for dim in dimension_str.lower()}
+    
+    # Create shape for new array (all 1s initially)
+    new_shape = [1, 1, 1, 1, 1]
+    
+    # Create transpose order
+    transpose_order = []
+    
+    # Fill in the provided dimensions
+    for i, dim in enumerate(dimension_str.lower()):
+        new_shape[current_to_target[dim]] = array.shape[i]
+        transpose_order.append(current_to_target[dim])
+    
+    # Reshape and transpose to get final array
+    reshaped = arr.reshape(tuple(new_shape))
+    
+    # Only transpose if we have more than one dimension
+    if len(transpose_order) > 1:
+        # Create full transpose order including missing dimensions
+        full_transpose = list(range(5))
+        for i, pos in enumerate(transpose_order):
+            full_transpose[pos] = i
+        reshaped = np.transpose(reshaped, full_transpose)
+    
+    return reshaped
+
+def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=None):
+    """Write an array as OME-ZARR, normalizing dimensions to TCZYX format.
+    
+    Args:
+        array: Input array-like object
+        dimension_str: String indicating dimension order (e.g. 'tczyx', 'cyx')
+        output_path: Path to write the zarr store
+        chunks: Optional chunk size (defaults to [1,1,64,64,64])
+    """
+    # Default chunks if none provided
+    if chunks is None:
+        chunks = [1, 1, 64, 64, 64]
+        
+    # Normalize array to 5D TCZYX
+    normalized_array = normalize_array_dimensions(array, dimension_str)
+    
+    # Write the normalized array
+    write_array_to_disk_chunked(normalized_array, output_path, chunks)
 
 
 def write_array_to_disk_chunked(source_array, output_dirpath, target_chunks):
