@@ -141,7 +141,7 @@ def dask_array_from_ome_ngff_rep(ome_ngff_rep, path_key='0'):
     """Get a dask array from an OME-NGFF image representation."""
 
     zgroup = zarr.open(ome_ngff_rep.uri)
-    darray = da.from_zarr(zgroup[path_key])
+    darray = da.from_zarr(zgroup[path_key]) # type: ignore
 
     return darray
 
@@ -229,10 +229,13 @@ def render_proxy_image(proxy_im, bbrel=DEFAULT_BB, dims=(512, 512), t=None, z=No
     if channels_to_render is None:
         n_channels = min(proxy_im.sizeC, len(DEFAULT_COLORS))
         channels_to_render = list(range(n_channels))
+    else:
+        n_channels = min(len(channels_to_render), len(DEFAULT_COLORS))
+
     if not mode:
-        if channels_to_render == 1:
+        if n_channels == 1:
             mode = "grayscale"
-        elif channels_to_render == 3:
+        elif n_channels == 3:
             mode = "RGB"
         else:
             mode = "channels"
@@ -241,12 +244,12 @@ def render_proxy_image(proxy_im, bbrel=DEFAULT_BB, dims=(512, 512), t=None, z=No
         if mode == "grayscale":
             csettings = {
                 n: ChannelRenderingSettings(colormap_end=[1, 1, 1])
-                for n in range(channels_to_render)
+                for n in channels_to_render
             }            
         else:
             csettings = {
-                n: ChannelRenderingSettings(colormap_end=DEFAULT_COLORS[n])
-                for n in range(channels_to_render)
+                c: ChannelRenderingSettings(colormap_end=DEFAULT_COLORS[n])
+                for n, c in enumerate(channels_to_render)
             }
     
     region_per_channel = {
