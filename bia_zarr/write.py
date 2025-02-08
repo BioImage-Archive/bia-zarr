@@ -10,6 +10,8 @@ import rich
 import zarr
 import tensorstore as ts
 
+from .genmeta import create_ome_zarr_metadata
+
 
 def derive_n_levels(shape: Tuple[int, ...]) -> int:
     """Calculate number of pyramid levels needed to downsample until largest spatial dimension <= 256.
@@ -81,6 +83,7 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
     return arr.reshape(tuple(new_shape))
 
 
+# TODO - coordinate scales, omero block
 def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=None, zarr_version: int = 2):
     """Write an array as OME-ZARR, normalizing dimensions to TCZYX format.
     
@@ -99,7 +102,7 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
     normalized_array = normalize_array_dimensions(array, dimension_str)
     
     # Create zarr group at output path
-    group = zarr.open_group(output_path, mode='w', zarr_version=zarr_version)
+    group = zarr.open_group(output_path, mode='w', zarr_format=zarr_version)
 
     # Calculate number of pyramid levels needed
     n_levels = derive_n_levels(normalized_array.shape)
@@ -122,6 +125,31 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
             downsample_factors,
             chunks
         )
+
+    # TODO - do this properly
+    coordinate_scales = [1.0, 1.0, 1.0, 1.0, 1.0]
+    ome_zarr_metadata = create_ome_zarr_metadata(output_path, "test_image", coordinate_scales, downsample_factors)
+
+    ome_metadata_dict = ome_zarr_metadata.model_dump(exclude_unset=True)
+
+    if zarr_version == 3:
+        ome_metadata_dict.update(
+            {
+                "version": "0.5",
+                "_creator": {
+                    "name": "bia-zarr"
+                }
+            }
+        )
+        ome_metadata = {
+            "ome": ome_metadata_dict
+        }
+        group.attrs.update(ome_metadata) # type: ignore
+    elif zarr_version == 2:
+        group.attrs.update(ome_zarr_metadata.model_dump(exclude_unset=True)) # type: ignore
+
+
+
 
 
 
@@ -162,7 +190,7 @@ def downsample_array_and_write_to_dirpath(
         ... )
     """
 
-    source = ts.open({
+    source = ts.open({ # type: ignore
         'driver': 'downsample',
         'downsample_factors': downsample_factors,
         "downsample_method": downsample_method,
@@ -249,3 +277,5 @@ def write_array_to_disk_chunked(source_array, output_dirpath, target_chunks):
             f"Elapsed: {str(timedelta(seconds=int(elapsed_time)))} | "
             f"ETA: {eta}"
         )
+
+

@@ -141,8 +141,8 @@ def ome_zarr_image_from_zarr_group_and_metadata(
     
     # Get chunk and shard information from the base array
     base_array = zarr_group[base_path_key]
-    init_dict['chunk_scheme'] = base_array.chunks
-    init_dict['shard_scheme'] = base_array.shards 
+    init_dict['chunk_scheme'] = base_array.chunks # type: ignore
+    init_dict['shard_scheme'] = base_array.shards  # type: ignore
     
     # Get zarr version from the group
     zarr_version = zarr_group.metadata.zarr_format
@@ -169,7 +169,7 @@ def get_array_with_min_dimensions(ome_zarr_image: OMEZarrImage, dims: tuple):
         if (size_y >= ydim) and (size_x >= xdim):
             break
     
-    return da.from_zarr(zarr_array)
+    return da.from_zarr(zarr_array) # type: ignore
 
 
 def open_ome_zarr_image(ome_zarr_image_uri: str):

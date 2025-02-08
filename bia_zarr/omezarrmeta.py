@@ -49,7 +49,7 @@ class MultiScaleImage(BaseModel):
     metadata: Optional[MSMetadata] = None
     name: Optional[str] = None
     axes: Optional[List[Axis]]
-    version: str
+    version: Optional[str] = None
 
 class OMEZarrMeta(BaseModel):
     omero: Optional[Omero] = None
