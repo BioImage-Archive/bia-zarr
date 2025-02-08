@@ -1,11 +1,14 @@
 import time
 import itertools
+from typing import List
 from datetime import timedelta
-import numpy as np
+from pathlib import Path
 
+import numpy as np
 import rich
 import zarr
 import tensorstore as ts
+
 
 def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
     """Normalize input array to 5D TCZYX format.
@@ -77,11 +80,75 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
     normalized_array = normalize_array_dimensions(array, dimension_str)
     
     # Create zarr group at output path
-    store = zarr.open_group(output_path, mode='w')
+    group = zarr.open_group(output_path, mode='w', zarr_version=zarr_version)
+
+    downsample_factors = [1, 1, 2, 2, 2]
     
     # Write the normalized array to '0' subpath
     array_path = f"{output_path}/0"
     write_array_to_disk_chunked(normalized_array, array_path, chunks)
+    next_array_path = Path(f"{output_path}/1")
+    downsample_array_and_write_to_dirpath(
+        array_path,
+        next_array_path,
+        downsample_factors,
+        chunks
+    )
+
+
+
+def downsample_array_and_write_to_dirpath(
+        array_uri: str,
+        output_dirpath: Path,
+        downsample_factors: List[int],
+        output_chunks: List[int],
+        downsample_method='mean'
+    ):
+    """
+    Downsample a zarr array and save the result to a new location with specified chunking.
+
+    This function opens a source array, downsamples it using the specified method, and writes
+    the result to a new zarr array with specified chunk sizes. The dimension separator
+    in the output is set to '/'.
+
+    Args:
+        array_uri: URI or path to source zarr array. If a local path is provided,
+            it will be converted to a file:// URI.
+        output_dirpath: Path where the downsampled array will be written.
+        downsample_factors: List of integers specifying the downsample factor for each dimension.
+            For example, [2, 2] will reduce the size of a 2D array by half in each dimension.
+        output_chunks: List of integers specifying the chunk size for each dimension
+            of the output array.
+        downsample_method: string description of the downsampling method, must be one of those
+            supported by tensorstore's downsampling driver
+
+    Returns:
+        None
+
+    Example:
+        >>> downsample_array_and_write_to_dirpath(
+        ...     "data.zarr",
+        ...     Path("downsampled.zarr"),
+        ...     downsample_factors=[2, 2],
+        ...     output_chunks=[256, 256]
+        ... )
+    """
+
+    source = ts.open({
+        'driver': 'downsample',
+        'downsample_factors': downsample_factors,
+        "downsample_method": downsample_method,
+        'base': {
+            'driver': 'zarr',
+            'kvstore': {
+                'driver': 'file',
+                'path': array_uri
+            }
+        }
+    }).result()
+
+    write_array_to_disk_chunked(source, output_dirpath, output_chunks)
+
 
 
 def write_array_to_disk_chunked(source_array, output_dirpath, target_chunks):

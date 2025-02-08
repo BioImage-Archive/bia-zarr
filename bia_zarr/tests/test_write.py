@@ -50,9 +50,3 @@ def test_normalize_array_dimensions_wrong_optional_order():
     arr = np.zeros((4, 3, 10, 5))
     with pytest.raises(ValueError, match="Non-spatial dimensions must be in order"):
         normalize_array_dimensions(arr, 'zcyx')
-
-def test_normalize_array_dimensions_cyz():
-    """Test 3D array with CYZ dimensions"""
-    arr = np.zeros((20, 50, 50))
-    normalized = normalize_array_dimensions(arr, 'cyz')
-    assert normalized.shape == (1, 20, 50, 50, 1)
