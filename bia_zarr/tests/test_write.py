@@ -54,7 +54,7 @@ def test_normalize_array_dimensions_wrong_optional_order():
 
 def test_derive_n_levels():
     """Test calculation of pyramid levels"""
-    from bia_zarr.write import derive_n_levels
+    from bia_zarr.write import derive_n_levels, write_array_as_ome_zarr
     
     # Test cases with expected number of levels (including base level)
     test_cases = [
@@ -68,3 +68,22 @@ def test_derive_n_levels():
     
     for shape, expected_levels in test_cases:
         assert derive_n_levels(shape) == expected_levels
+
+
+def test_write_array_as_ome_zarr(tmp_path):
+    """Test writing array as OME-ZARR with multiple pyramid levels"""
+    # Create test array that will need 3 pyramid levels (1024 -> 512 -> 256)
+    arr = np.zeros((2, 3, 4, 1024, 1024))
+    output_path = tmp_path / "test.zarr"
+    
+    # Write array
+    write_array_as_ome_zarr(arr, 'tczyx', str(output_path))
+    
+    # Check that all three levels exist
+    assert (output_path / "0").exists()
+    assert (output_path / "1").exists()
+    assert (output_path / "2").exists()
+    
+    # Check that level 0 has original dimensions
+    zarr_array = zarr.open(str(output_path / "0"))
+    assert zarr_array.shape == (2, 3, 4, 1024, 1024)

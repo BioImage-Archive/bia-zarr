@@ -101,18 +101,27 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
     # Create zarr group at output path
     group = zarr.open_group(output_path, mode='w', zarr_version=zarr_version)
 
+    # Calculate number of pyramid levels needed
+    n_levels = derive_n_levels(normalized_array.shape)
+    
+    # Downsample factors for each dimension (T,C,Z,Y,X)
     downsample_factors = [1, 1, 2, 2, 2]
     
-    # Write the normalized array to '0' subpath
-    array_path = f"{output_path}/0"
-    write_array_to_disk_chunked(normalized_array, array_path, chunks)
-    next_array_path = Path(f"{output_path}/1")
-    downsample_array_and_write_to_dirpath(
-        array_path,
-        next_array_path,
-        downsample_factors,
-        chunks
-    )
+    # Write base level (level 0)
+    current_path = f"{output_path}/0"
+    write_array_to_disk_chunked(normalized_array, current_path, chunks)
+    
+    # Generate subsequent pyramid levels
+    for level in range(1, n_levels):
+        prev_path = f"{output_path}/{level-1}"
+        current_path = f"{output_path}/{level}"
+        
+        downsample_array_and_write_to_dirpath(
+            prev_path,
+            Path(current_path),
+            downsample_factors,
+            chunks
+        )
 
 
 
