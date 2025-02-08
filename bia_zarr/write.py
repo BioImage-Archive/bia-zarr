@@ -25,12 +25,29 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
     if len(dimension_str) != arr.ndim:
         raise ValueError(f"Dimension string {dimension_str} does not match array rank {arr.ndim}")
         
-    # Check if dimensions are in correct order
-    if dimension_str.lower() != 'tczyx'[-len(dimension_str):]:
+    # Convert to lowercase for comparison
+    dims = dimension_str.lower()
+    
+    # Split into spatial ('yx' required) and optional dimensions ('tcz')
+    spatial_dims = ''.join(d for d in dims if d in 'yx')
+    optional_dims = ''.join(d for d in dims if d in 'tcz')
+    
+    # Validate spatial dimensions are in correct order
+    if spatial_dims != 'yx':
         raise ValueError(
-            f"Dimensions must be provided in order matching suffix of 'tczyx', "
-            f"got {dimension_str}"
+            f"Spatial dimensions must be in order 'yx', got '{spatial_dims}'"
         )
+    
+    # Validate optional dimensions are in correct order if present
+    if optional_dims:
+        valid_optional = 'tcz'
+        if not all(a <= b for a, b in zip(
+            [valid_optional.index(d) for d in optional_dims],
+            [valid_optional.index(d) for d in optional_dims][1:]
+        )):
+            raise ValueError(
+                f"Non-spatial dimensions must be in order 'tcz', got '{optional_dims}'"
+            )
     
     # Create shape for padding (all 1s initially)
     new_shape = [1, 1, 1, 1, 1]
