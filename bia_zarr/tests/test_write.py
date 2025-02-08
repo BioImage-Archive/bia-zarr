@@ -50,3 +50,21 @@ def test_normalize_array_dimensions_wrong_optional_order():
     arr = np.zeros((4, 3, 10, 5))
     with pytest.raises(ValueError, match="Non-spatial dimensions must be in order"):
         normalize_array_dimensions(arr, 'zcyx')
+
+
+def test_derive_n_levels():
+    """Test calculation of pyramid levels"""
+    from bia_zarr.write import derive_n_levels
+    
+    # Test cases with expected number of levels (including base level)
+    test_cases = [
+        ((1, 1, 1, 256, 256), 1),  # Already at target size
+        ((1, 1, 1, 512, 512), 2),  # One downsample needed
+        ((1, 1, 1, 1024, 1024), 3),  # Two downsamples needed
+        ((1, 1, 1, 100, 100), 1),  # Below target size
+        ((1, 1, 1, 257, 256), 2),  # Just over target size
+        ((1, 1, 1, 256, 512), 2),  # One dimension at target, other larger
+    ]
+    
+    for shape, expected_levels in test_cases:
+        assert derive_n_levels(shape) == expected_levels

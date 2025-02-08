@@ -1,6 +1,7 @@
 import time
 import itertools
-from typing import List
+import math
+from typing import List, Tuple
 from datetime import timedelta
 from pathlib import Path
 
@@ -8,6 +9,24 @@ import numpy as np
 import rich
 import zarr
 import tensorstore as ts
+
+
+def derive_n_levels(shape: Tuple[int, ...]) -> int:
+    """Calculate number of pyramid levels needed to downsample until largest spatial dimension <= 256.
+    
+    Args:
+        shape: Tuple of array dimensions in TCZYX order
+        
+    Returns:
+        Number of pyramid levels needed
+    """
+    # Get X and Y dimensions (last two elements of shape)
+    max_spatial_dim = max(shape[-2:])  # max of Y and X dimensions
+    
+    # Calculate how many times we need to divide by 2 to get <= 256
+    n_levels = max(0, math.ceil(math.log2(max_spatial_dim / 256)))
+    
+    return n_levels + 1  # Add 1 to include the base level
 
 
 def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
