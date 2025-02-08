@@ -59,7 +59,7 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
     return arr.reshape(tuple(new_shape))
 
 
-def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=None):
+def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=None, zarr_version: int = 2):
     """Write an array as OME-ZARR, normalizing dimensions to TCZYX format.
     
     Args:
@@ -67,6 +67,7 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
         dimension_str: String indicating dimension order (e.g. 'tczyx', 'cyx')
         output_path: Path to write the zarr store
         chunks: Optional chunk size (defaults to [1,1,64,64,64])
+        zarr_version: Zarr format version (2 or 3, default 2)
     """
     # Default chunks if none provided
     if chunks is None:
@@ -75,9 +76,12 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
     # Normalize array to 5D TCZYX
     normalized_array = normalize_array_dimensions(array, dimension_str)
     
-    # rich.print(normalized_array.shape)
-    # Write the normalized array
-    write_array_to_disk_chunked(normalized_array, output_path, chunks)
+    # Create zarr group at output path
+    store = zarr.open_group(output_path, mode='w')
+    
+    # Write the normalized array to '0' subpath
+    array_path = f"{output_path}/0"
+    write_array_to_disk_chunked(normalized_array, array_path, chunks)
 
 
 def write_array_to_disk_chunked(source_array, output_dirpath, target_chunks):
