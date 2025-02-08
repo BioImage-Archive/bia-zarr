@@ -55,4 +55,4 @@ def test_normalize_array_dimensions_cyz():
     """Test 3D array with CYZ dimensions"""
     arr = np.zeros((20, 50, 50))
     normalized = normalize_array_dimensions(arr, 'cyz')
-    assert normalized.shape == (1, 20, 1, 50, 50)
+    assert normalized.shape == (1, 20, 50, 50, 1)
