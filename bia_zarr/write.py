@@ -58,6 +58,7 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
     # Just reshape - no transpose needed since dimensions are in correct order
     return arr.reshape(tuple(new_shape))
 
+
 def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=None):
     """Write an array as OME-ZARR, normalizing dimensions to TCZYX format.
     
@@ -74,6 +75,7 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
     # Normalize array to 5D TCZYX
     normalized_array = normalize_array_dimensions(array, dimension_str)
     
+    # rich.print(normalized_array.shape)
     # Write the normalized array
     write_array_to_disk_chunked(normalized_array, output_path, chunks)
 

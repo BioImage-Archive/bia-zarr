@@ -13,7 +13,7 @@ def test_normalize_array_dimensions_cyx():
     """Test 3D array with CYX dimensions"""
     arr = np.zeros((3, 10, 5))
     normalized = normalize_array_dimensions(arr, 'cyx')
-    assert normalized.shape == (1, 1, 3, 10, 5)
+    assert normalized.shape == (1, 3, 1, 10, 5)
 
 def test_normalize_array_dimensions_zyx():
     """Test 3D array with ZYX dimensions"""
