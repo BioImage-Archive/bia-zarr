@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
+import zarr
 
-from bia_zarr.write import normalize_array_dimensions
+from bia_zarr.write import normalize_array_dimensions, write_array_as_ome_zarr
 
 def test_normalize_array_dimensions_yx():
     """Test basic 2D array with YX dimensions"""
