@@ -13,7 +13,6 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
     Args:
         array: Input array-like object
         dimension_str: String indicating dimension order (e.g. 'tczyx', 'cyx')
-        Must be in order matching suffix of 'tczyx'
         
     Returns:
         5D array with dimensions ordered as TCZYX, with size 1 for missing dimensions
