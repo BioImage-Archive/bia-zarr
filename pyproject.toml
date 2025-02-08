@@ -18,5 +18,17 @@ dependencies = [
     "zarr>=3.0.2",
 ]
 
+[dependency-groups]
+dev = ["pytest"]
+
 [project.scripts]
 bia-zarr = "bia_zarr.cli:app"
+
+[tool.poetry]
+name = "bia-zarr"
+version = "0.1.0"
+description = "BioImage Archive Zarr tools"
+authors = ["Matthew Hartley <matthewh@ebi.ac.uk>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "bia_zarr"}]
