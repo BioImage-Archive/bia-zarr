@@ -45,10 +45,14 @@ def validate_ome_zarr_image(ome_zarr_url: str):
 def thumbnail(
     ome_zarr_url: str,
     output: str = typer.Option(..., help="Output filename"),
-    dimensions: Tuple[int, int] = typer.Option((256, 256), help="Output dimensions (width, height)")
+    dimensions: Tuple[int, int] = typer.Option((256, 256), help="Output dimensions (width, height)"),
+    channels: str = typer.Option(None, help="Comma-separated list of channel indices to include")
 ):
     """Generate a thumbnail from an OME-ZARR image with specified dimensions."""
-    im = generate_padded_thumbnail_from_ngff_uri(ome_zarr_url, dims=dimensions)
+    channel_indices = None
+    if channels:
+        channel_indices = [int(c) for c in channels.split(',')]
+    im = generate_padded_thumbnail_from_ngff_uri(ome_zarr_url, dims=dimensions, channels=channel_indices)
     im.save(output)
 
 

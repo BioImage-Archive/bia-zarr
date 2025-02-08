@@ -198,7 +198,7 @@ def render_multiple_2D_arrays(arrays, colormaps):
 DEFAULT_BB = BoundingBox2DRel(x=0, y=0, xsize=1, ysize=1)
 
 
-def render_proxy_image(proxy_im, bbrel=DEFAULT_BB, dims=(512, 512), t=None, z=None, csettings=None, mode=None):
+def render_proxy_image(proxy_im, bbrel=DEFAULT_BB, dims=(512, 512), t=None, z=None, csettings=None, mode=None, channels_to_render=None):
     """In order to render a 2D plane we need to:
     
     1. Lazy-load the image as a Dask array.
@@ -226,7 +226,9 @@ def render_proxy_image(proxy_im, bbrel=DEFAULT_BB, dims=(512, 512), t=None, z=No
     if not z:
         z = darray.shape[2] // 2
 
-    channels_to_render = min(proxy_im.sizeC, len(DEFAULT_COLORS))
+    if channels_to_render is None:
+        n_channels = min(proxy_im.sizeC, len(DEFAULT_COLORS))
+        channels_to_render = list(range(n_channels))
     if not mode:
         if channels_to_render == 1:
             mode = "grayscale"
@@ -254,7 +256,7 @@ def render_proxy_image(proxy_im, bbrel=DEFAULT_BB, dims=(512, 512), t=None, z=No
             c=c,
             bb=bbrel
         )
-        for c in range(channels_to_render)
+        for c in channels_to_render
     }
 
     channel_arrays = {
@@ -277,12 +279,18 @@ def render_proxy_image(proxy_im, bbrel=DEFAULT_BB, dims=(512, 512), t=None, z=No
     return im
 
 
-def generate_padded_thumbnail_from_ngff_uri(ome_zarr_uri, dims=(256, 256), autocontrast=True):
-    """Given a NGFF URI, generate a 2D thumbnail of the given dimensions."""
-
+def generate_padded_thumbnail_from_ngff_uri(ome_zarr_uri, dims=(256, 256), autocontrast=True, channels=None):
+    """Given a NGFF URI, generate a 2D thumbnail of the given dimensions.
+    
+    Args:
+        ome_zarr_uri: URI to the OME-ZARR image
+        dims: Target dimensions (width, height)
+        autocontrast: Whether to apply autocontrast
+        channels: List of channel indices to include, or None for all channels
+    """
     proxy_im = open_ome_zarr_image(ome_zarr_uri)
 
-    im = render_proxy_image(proxy_im)
+    im = render_proxy_image(proxy_im, channels_to_render=channels)
     im.thumbnail(dims)
     im_rgb = im.convert('RGB')
 
