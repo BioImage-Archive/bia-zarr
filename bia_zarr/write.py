@@ -28,6 +28,21 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
     # Convert to lowercase for comparison
     dims = dimension_str.lower()
     
+    # Split into spatial ('yx') and optional dimensions ('tcz')
+    spatial_dims = ''.join(d for d in dims if d in 'yx')
+    optional_dims = ''.join(d for d in dims if d in 'tcz')
+    
+    # Validate spatial dimensions are in correct order
+    if spatial_dims and spatial_dims != 'yx':
+        raise ValueError(f"Spatial dimensions must be in order 'yx', got '{spatial_dims}'")
+    
+    # Validate optional dimensions are in correct order if present
+    if optional_dims:
+        valid_optional = 'tcz'
+        optional_positions = [valid_optional.index(d) for d in optional_dims]
+        if not all(a <= b for a, b in zip(optional_positions, optional_positions[1:])):
+            raise ValueError(f"Non-spatial dimensions must be in order 'tcz', got '{optional_dims}'")
+    
     # Map each dimension to its position in the target 5D array
     dim_to_pos = {'t': 0, 'c': 1, 'z': 2, 'y': 3, 'x': 4}
     
