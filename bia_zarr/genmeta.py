@@ -12,7 +12,8 @@ def create_ome_zarr_metadata(
         zarr_group_uri: str,
         name: str,
         coordinate_scales: List[float],
-        downsample_factors: List
+        downsample_factors: List,
+        create_omero_block: bool = False
     ) -> OMEZarrMeta:
     """Read a Zarr group and generate the OME-Zarr metadata for that group,
     effectively turning a group of Zarr arrays into an OME-Zarr.
@@ -125,3 +126,44 @@ def generate_multiscales(datasets, name):
     )
 
     return multiscales
+
+
+def create_omero_metadata_object(zarr_group_uri: str):
+    group = zarr.open_group(zarr_group_uri)
+    array_keys = list(group.array_keys())
+
+    smallest_array = group[array_keys[-1]]
+    min_val = smallest_array[:].min() # type: ignore
+    max_val = smallest_array[:].max() # type: ignore
+
+    largest_array = group[array_keys[0]]
+    tdim, cdim, zdim, _, _ = largest_array.shape
+    # rich.print(min_val, max_val, tdim, zdim)
+
+    window = Window(
+        min=0.0,
+        max=255.0,
+        start=min_val,
+        end=max_val
+    )
+    channel0 = Channel(
+        color="FFFFFF",
+        coefficient=1,
+        active=True,
+        label="Channel 0",
+        window=window,
+        family="linear",
+        inverted=False,
+
+    )
+    rdefs = RDefs(
+        model="greyscale",
+        defaultT=tdim//2, # type: ignore
+        defaultZ=zdim//2 # type: ignore
+    )
+    omero = Omero(
+        rdefs=rdefs,
+        channels=[channel0]
+    )
+
+    return omero
