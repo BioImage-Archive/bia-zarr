@@ -128,7 +128,13 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
 
     # TODO - do this properly
     coordinate_scales = [1.0, 1.0, 1.0, 1.0, 1.0]
-    ome_zarr_metadata = create_ome_zarr_metadata(output_path, "test_image", coordinate_scales, downsample_factors)
+    ome_zarr_metadata = create_ome_zarr_metadata(
+        output_path,
+        "test_image",
+        coordinate_scales,
+        downsample_factors,
+        create_omero_block=True
+    )
 
     ome_metadata_dict = ome_zarr_metadata.model_dump(exclude_unset=True)
 

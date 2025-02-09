@@ -37,11 +37,14 @@ def create_ome_zarr_metadata(
     # Use these scaling factors together with base coordinate scales to generate DataSet objects
     datasets = generate_dataset_objects(coordinate_scales, dim_ratios, array_keys)
     multiscales = generate_multiscales(datasets, name)
-    # omero = create_omero_metadata_object(str(zarr_group_uri))
+    if create_omero_block:
+        omero = create_omero_metadata_object(str(zarr_group_uri))
+    else:
+        omero = None
 
     ome_zarr_metadata = OMEZarrMeta(
         multiscales=[multiscales],
-        # omero=omero
+        omero=omero
     )
 
     return ome_zarr_metadata
