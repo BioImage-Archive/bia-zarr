@@ -1,4 +1,3 @@
-```markdown
 # bia-zarr Module Overview
 
 This module provides utilities for working with Zarr and OME-Zarr datasets, primarily focused on reading, writing, and manipulating image data in these formats.  It includes functionality for generating OME-Zarr metadata, creating thumbnails, and converting between different Zarr formats, with a particular emphasis on handling BioImaging Archive (BIA) data. It is designed for compatibility with both Zarr v2 and v3.
@@ -98,5 +97,3 @@ The module is organized into several submodules, each with specific responsibili
 
 ## Notes
 The initial commented-out code snippets in `minzarr.py` suggest an early intention to use asynchronous HTTP requests for accessing remote Zarr datasets. While this isn't fully implemented in the provided code, it indicates a potential future direction for the module. The `proxyimage` and `rendering` submodules are key for accessing and displaying image data. The use of Pydantic models throughout the module provides strong type checking and validation, making the code more robust and easier to understand. The Zarr v3 support is present.
-```
-
