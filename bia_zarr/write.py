@@ -84,7 +84,7 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
 
 
 # TODO - coordinate scales, omero block
-def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=None, zarr_version: int = 2):
+def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=None, zarr_version: int = 2, channel_labels: List[str] = None):
     """Write an array as OME-ZARR, normalizing dimensions to TCZYX format.
     
     Args:
@@ -93,13 +93,24 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
         output_path: Path to write the zarr store
         chunks: Optional chunk size (defaults to [1,1,64,64,64])
         zarr_version: Zarr format version (2 or 3, default 2)
+        channel_labels: Optional list of strings to label channels. Must match number of channels.
     """
     # Default chunks if none provided
     if chunks is None:
         chunks = [1, 1, 64, 64, 64]
+    
+    # Validate channel labels if provided
+    if channel_labels is not None:
+        if 'c' not in dimension_str.lower():
+            raise ValueError("Channel labels provided but input has no channel dimension")
         
     # Normalize array to 5D TCZYX
     normalized_array = normalize_array_dimensions(array, dimension_str)
+    
+    if channel_labels is not None:
+        n_channels = normalized_array.shape[1]  # C is second dimension in TCZYX
+        if len(channel_labels) != n_channels:
+            raise ValueError(f"Number of channel labels ({len(channel_labels)}) does not match number of channels ({n_channels})")
     
     # Create zarr group at output path
     group = zarr.open_group(output_path, mode='w', zarr_format=zarr_version)
@@ -133,7 +144,8 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
         "test_image",
         coordinate_scales,
         downsample_factors,
-        create_omero_block=True
+        create_omero_block=True,
+        channel_labels=channel_labels
     )
 
     ome_metadata_dict = ome_zarr_metadata.model_dump(exclude_unset=True)

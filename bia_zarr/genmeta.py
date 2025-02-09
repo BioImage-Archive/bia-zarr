@@ -13,7 +13,8 @@ def create_ome_zarr_metadata(
         name: str,
         coordinate_scales: List[float],
         downsample_factors: List,
-        create_omero_block: bool = False
+        create_omero_block: bool = False,
+        channel_labels: List[str] = None
     ) -> OMEZarrMeta:
     """Read a Zarr group and generate the OME-Zarr metadata for that group,
     effectively turning a group of Zarr arrays into an OME-Zarr.
@@ -38,7 +39,7 @@ def create_ome_zarr_metadata(
     datasets = generate_dataset_objects(coordinate_scales, dim_ratios, array_keys)
     multiscales = generate_multiscales(datasets, name)
     if create_omero_block:
-        omero = create_omero_metadata_object(str(zarr_group_uri))
+        omero = create_omero_metadata_object(str(zarr_group_uri), channel_labels)
     else:
         omero = None
 
@@ -131,7 +132,7 @@ def generate_multiscales(datasets, name):
     return multiscales
 
 
-def create_omero_metadata_object(zarr_group_uri: str):
+def create_omero_metadata_object(zarr_group_uri: str, channel_labels: List[str] = None):
     group = zarr.open_group(zarr_group_uri)
     array_keys = list(group.array_keys())
 
@@ -166,7 +167,7 @@ def create_omero_metadata_object(zarr_group_uri: str):
             color=color,
             coefficient=1,
             active=c < 3,  # First three channels active
-            label=f"Channel {c}",
+            label=channel_labels[c] if channel_labels else f"Channel {c}",
             window=window,
             family="linear",
             inverted=False
