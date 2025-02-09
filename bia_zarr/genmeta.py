@@ -137,8 +137,10 @@ def create_omero_metadata_object(zarr_group_uri: str):
     max_val = smallest_array[:].max() # type: ignore
 
     largest_array = group[array_keys[0]]
+    if len(largest_array.shape) != 5:
+        raise ValueError("Input array must be 5-dimensional (t,c,z,y,x)")
+        
     tdim, cdim, zdim, _, _ = largest_array.shape
-    # rich.print(min_val, max_val, tdim, zdim)
 
     window = Window(
         min=0.0,
@@ -146,24 +148,37 @@ def create_omero_metadata_object(zarr_group_uri: str):
         start=min_val,
         end=max_val
     )
-    channel0 = Channel(
-        color="FFFFFF",
-        coefficient=1,
-        active=True,
-        label="Channel 0",
-        window=window,
-        family="linear",
-        inverted=False,
 
-    )
+    # Define colors for channels
+    colors = ["FF0000", "00FF00", "0000FF", "00FFFF", "FFFF00", "FF00FF"]
+    
+    channels = []
+    for c in range(cdim):
+        if cdim == 1:
+            color = "FFFFFF"  # White for single channel
+        else:
+            color = colors[c % len(colors)]  # Cycle through colors
+            
+        channel = Channel(
+            color=color,
+            coefficient=1,
+            active=c < 3,  # First three channels active
+            label=f"Channel {c}",
+            window=window,
+            family="linear",
+            inverted=False
+        )
+        channels.append(channel)
+
     rdefs = RDefs(
-        model="greyscale",
-        defaultT=tdim//2, # type: ignore
-        defaultZ=zdim//2 # type: ignore
+        model="color" if cdim > 1 else "greyscale",
+        defaultT=tdim//2,
+        defaultZ=zdim//2
     )
+    
     omero = Omero(
         rdefs=rdefs,
-        channels=[channel0]
+        channels=channels
     )
 
     return omero
