@@ -55,14 +55,30 @@ The module is organized into several submodules, each with specific responsibili
     print(image.ngff_metadata)      # Accessing OME-Zarr metadata
     ```
 
-*   **Generating a thumbnail:**
+*   **Working with different OME-Zarr types and generating thumbnails:**
 
     ```python
+    from bia_zarr.omezarrtypes import get_ome_zarr_type, get_single_image_uri_from_url
     from bia_zarr.rendering import generate_padded_thumbnail_from_ngff_uri
 
-    im = generate_padded_thumbnail_from_ngff_uri("path/to/image.zarr", dims=(128, 128))
+    # First determine the type of OME-Zarr container
+    zarr_type = get_ome_zarr_type("path/to/container.zarr")
+    print(f"Container type: {zarr_type}")  # Could be v04image, v05image, bf2rawtr, or hcs
+
+    # Get a single image URI regardless of container type
+    # For HCS plates, this will return the first image in the first well
+    image_uri = get_single_image_uri_from_url("path/to/container.zarr")
+
+    # Generate a thumbnail from the image
+    im = generate_padded_thumbnail_from_ngff_uri(image_uri, dims=(128, 128))
     im.save("thumbnail.png")
     ```
+
+    The module supports several OME-Zarr container types:
+    * `v04image`: A standard OME-NGFF v0.4 image
+    * `v05image`: A standard OME-NGFF v0.5 image
+    * `bf2rawtr`: A Bio-Formats2Raw transformed dataset
+    * `hcs`: A High Content Screening plate, where `get_single_image_uri_from_url()` will return the path to the first image in the first well
 
 *   **Writing a NumPy array as an OME-Zarr:**
 
