@@ -33,17 +33,11 @@ def determine_ome_zarr_type(zarr_group):
         if dict(zarr_group.attrs) == {'bioformats2raw.layout': 3}:
             return OMEZarrType.bf2rawtr
         else:
-            try:
-                OMEZarrMeta.model_validate(zarr_group.attrs)
+            if 'multiscales' in zarr_group.attrs:
                 return OMEZarrType.v04image
-            except Exception:
-                pass
     elif zarr_group.metadata.zarr_format == 3:
-        try:
-            OMEZarrMeta.model_validate(zarr_group.attrs['ome'])
+        if 'ome' in zarr_group.attrs and 'multiscales' in zarr_group.attrs['ome']:
             return OMEZarrType.v05image
-        except Exception:
-            pass
 
     raise ValueError("Unknown OME-Zarr format")
 
