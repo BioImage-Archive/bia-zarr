@@ -36,13 +36,13 @@ def determine_ome_zarr_type(zarr_group):
             try:
                 OMEZarrMeta.model_validate(zarr_group.attrs)
                 return OMEZarrType.v04image
-            except IOError:
-                raise
+            except Exception:
+                pass
     elif zarr_group.metadata.zarr_format == 3:
         try:
             OMEZarrMeta.model_validate(zarr_group.attrs['ome'])
             return OMEZarrType.v05image
-        except IOError:
-            raise
+        except Exception:
+            pass
 
-    raise Exception("Unknown")
+    raise ValueError("Unknown OME-Zarr format")

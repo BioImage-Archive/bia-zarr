@@ -33,5 +33,5 @@ def test_get_ome_zarr_type_unknown():
     mock_group.attrs = {"unknown": "format"}
 
     with patch('zarr.open_group', return_value=mock_group):
-        with pytest.raises(Exception, match="Unknown"):
+        with pytest.raises(ValueError, match="Unknown OME-Zarr format"):
             get_ome_zarr_type("some_url")
