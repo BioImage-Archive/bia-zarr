@@ -76,7 +76,7 @@ def get_single_image_uri(zarr_group, base_uri: str) -> str:
     elif ome_zarr_type == OMEZarrType.hcs:
         # Get the path of the first well from the plate metadata
         first_well_path = zarr_group.attrs['plate']['wells'][0]['path']
-        return f"{base_uri}/{first_well_path}"
+        return f"{base_uri}/{first_well_path}/0"
     else:
         raise ValueError("Unknown OME-Zarr format")
 
