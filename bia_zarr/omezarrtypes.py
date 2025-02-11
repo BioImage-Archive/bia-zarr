@@ -58,6 +58,15 @@ def get_single_image_uri(zarr_group, base_uri: str) -> str:
     Returns:
         str: URI pointing to a single image
     """
+    """Get the URI for a single image from any OME-NGFF container.
+    
+    Args:
+        zarr_group: The zarr group object
+        base_uri: The base URI of the OME-NGFF container
+        
+    Returns:
+        str: URI pointing to a single image
+    """
     ome_zarr_type = determine_ome_zarr_type(zarr_group)
     
     if ome_zarr_type in (OMEZarrType.v04image, OMEZarrType.v05image):
@@ -70,3 +79,16 @@ def get_single_image_uri(zarr_group, base_uri: str) -> str:
         return f"{base_uri}/{first_well_path}"
     else:
         raise ValueError("Unknown OME-Zarr format")
+
+
+def get_single_image_uri_from_url(url: str) -> str:
+    """Get a single image URI from any OME-NGFF container URL.
+    
+    Args:
+        url: URL to an OME-NGFF container
+        
+    Returns:
+        str: URI pointing to a single image
+    """
+    zarr_group = zarr.open_group(url, mode='r')
+    return get_single_image_uri(zarr_group, url)
