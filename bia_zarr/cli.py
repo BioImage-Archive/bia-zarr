@@ -40,10 +40,16 @@ def thumbnail(
     channels: str = typer.Option(None, help="Comma-separated list of channel indices to include")
 ):
     """Generate a thumbnail from an OME-ZARR image with specified dimensions."""
+    from .omezarrtypes import get_single_image_uri_from_url
+    
+    # First get the single image URL from any container type
+    image_uri = get_single_image_uri_from_url(ome_zarr_url)
+    
+    # Then generate the thumbnail from that image
     channel_indices = None
     if channels:
         channel_indices = [int(c) for c in channels.split(',')]
-    im = generate_padded_thumbnail_from_ngff_uri(ome_zarr_url, dims=dimensions, channels=channel_indices)
+    im = generate_padded_thumbnail_from_ngff_uri(image_uri, dims=dimensions, channels=channel_indices)
     im.save(output)
 
 
