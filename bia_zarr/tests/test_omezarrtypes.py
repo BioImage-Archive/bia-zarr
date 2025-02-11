@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from bia_zarr.omezarrtypes import get_ome_zarr_type, OMEZarrType
+from bia_zarr.omezarrtypes import get_ome_zarr_type, get_single_image_uri, OMEZarrType
 
 
 @pytest.mark.parametrize("url,expected_type", [
