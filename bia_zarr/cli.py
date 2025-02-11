@@ -18,6 +18,14 @@ def determine_ome_zarr_type(url: str):
 
 
 @app.command()
+def get_image_uri(url: str):
+    """Get a single image URI from any OME-NGFF container."""
+    from .omezarrtypes import get_single_image_uri_from_url
+    image_uri = get_single_image_uri_from_url(url)
+    rich.print(image_uri)
+
+
+@app.command()
 def validate_ome_zarr_image(ome_zarr_url: str):
     ome_zarr_image = open_ome_zarr_image(ome_zarr_url)
 
