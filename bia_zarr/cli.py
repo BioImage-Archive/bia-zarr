@@ -4,16 +4,17 @@ from typing import Tuple
 
 from .proxyimage import open_ome_zarr_image
 from .rendering import generate_padded_thumbnail_from_ngff_uri
+from .omezarrtypes import get_ome_zarr_type
 
 
 app = typer.Typer()
 
 
-@app.command()
-def validate_ome_zarr_thing(url: str):
-    from .thing import open_ome_zarr_thing
+@app.command('get-type')
+def determine_ome_zarr_type(url: str):
+    ome_zarr_type = get_ome_zarr_type(url)
 
-    open_ome_zarr_thing(url)
+    rich.print(f"Determined type as: {ome_zarr_type}")
 
 
 @app.command()
