@@ -46,3 +46,27 @@ def determine_ome_zarr_type(zarr_group):
             pass
 
     raise ValueError("Unknown OME-Zarr format")
+
+
+def get_single_image_uri(zarr_group, base_uri: str) -> str:
+    """Get the URI for a single image from any OME-NGFF container.
+    
+    Args:
+        zarr_group: The zarr group object
+        base_uri: The base URI of the OME-NGFF container
+        
+    Returns:
+        str: URI pointing to a single image
+    """
+    ome_zarr_type = determine_ome_zarr_type(zarr_group)
+    
+    if ome_zarr_type in (OMEZarrType.v04image, OMEZarrType.v05image):
+        return base_uri
+    elif ome_zarr_type == OMEZarrType.bf2rawtr:
+        return f"{base_uri}/0"
+    elif ome_zarr_type == OMEZarrType.hcs:
+        # Get the path of the first well from the plate metadata
+        first_well_path = zarr_group.attrs['plate']['wells'][0]['path']
+        return f"{base_uri}/{first_well_path}"
+    else:
+        raise ValueError("Unknown OME-Zarr format")

@@ -35,3 +35,34 @@ def test_get_ome_zarr_type_unknown():
     with patch('zarr.open_group', return_value=mock_group):
         with pytest.raises(ValueError, match="Unknown OME-Zarr format"):
             get_ome_zarr_type("some_url")
+
+
+@pytest.mark.parametrize("zarr_format,attrs,base_uri,expected_uri", [
+    # v0.4 image - return as-is
+    (2, {"multiscales": [{}]}, "http://example.com/image.zarr", "http://example.com/image.zarr"),
+    # v0.5 image - return as-is
+    (3, {"ome": {"multiscales": [{}]}}, "http://example.com/image.zarr", "http://example.com/image.zarr"),
+    # bioformats2raw - append /0
+    (2, {"bioformats2raw.layout": 3}, "http://example.com/bf2raw.zarr", "http://example.com/bf2raw.zarr/0"),
+    # HCS plate - use first well path
+    (2, {
+        "plate": {
+            "wells": [{"path": "A/1"}]
+        }
+    }, "http://example.com/plate.zarr", "http://example.com/plate.zarr/A/1"),
+])
+def test_get_single_image_uri(zarr_format, attrs, base_uri, expected_uri):
+    mock_group = MagicMock()
+    mock_group.metadata.zarr_format = zarr_format
+    mock_group.attrs = attrs
+    
+    assert get_single_image_uri(mock_group, base_uri) == expected_uri
+
+
+def test_get_single_image_uri_unknown():
+    mock_group = MagicMock()
+    mock_group.metadata.zarr_format = 2
+    mock_group.attrs = {"unknown": "format"}
+
+    with pytest.raises(ValueError, match="Unknown OME-Zarr format"):
+        get_single_image_uri(mock_group, "http://example.com/unknown.zarr")
