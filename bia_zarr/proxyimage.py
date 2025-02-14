@@ -11,6 +11,7 @@ from .omezarrmeta import OMEZarrMeta, DataSet, CoordinateTransformation
 UNIT_LOOKUP = {
     None: 1,
     "meter": 1,
+    "millimeter": 1e-3,
     "micrometer": 1e-6,
     "nanometer": 1e-9,
     "angstrom": 1e-10,
