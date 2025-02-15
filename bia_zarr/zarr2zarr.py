@@ -10,6 +10,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 from .proxyimage import open_ome_zarr_image, open_ome_zarr
+from .omezarrtypes import get_ome_zarr_type, OMEZarrType
 
 
 class ZarrConversionConfig(BaseModel):
@@ -57,6 +58,14 @@ def zarr2zarr(
         ome_zarr_uri: URI to input OME-Zarr image
         output_base_dirpath: Path where output OME-Zarr will be written
         config: Configuration for the conversion process
+        
+    Raises:
+        ValueError: If the input URI is not an OME-Zarr image
     """
+    # Check the type of the input
+    zarr_type = get_ome_zarr_type(ome_zarr_uri)
+    if zarr_type != OMEZarrType.IMAGE:
+        raise ValueError(f"Input URI must be an OME-Zarr image, got {zarr_type}")
+
     # TODO: Implement conversion logic
     raise NotImplementedError("zarr2zarr conversion not yet implemented")
