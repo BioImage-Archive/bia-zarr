@@ -121,6 +121,37 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
 
 
 # TODO - coordinate scales, omero block
+def generate_write_config_from_array(array, dimension_str: str) -> ZarrWriteConfig:
+    """Generate ZarrWriteConfig from an array and its dimension string.
+    
+    Args:
+        array: Input array
+        dimension_str: String indicating dimension order (e.g. 'tczyx', 'cyx')
+        
+    Returns:
+        ZarrWriteConfig configured based on array properties
+    """
+    # Normalize array to 5D TCZYX
+    normalized_array = normalize_array_dimensions(array, dimension_str)
+    
+    # Set chunks based on whether we have a z dimension with size > 1
+    if normalized_array.shape[2] > 1:  # Z dimension is index 2 in TCZYX
+        target_chunks = [1, 1, 64, 64, 64]
+        downsample_factors = [1, 1, 2, 2, 2]
+    else:
+        target_chunks = [1, 1, 1, 1024, 1024]
+        downsample_factors = [1, 1, 1, 2, 2]
+    
+    # Default coordinate scales (1.0 for each dimension)
+    coordinate_scales = [1.0] * 5
+    
+    return ZarrWriteConfig(
+        target_chunks=target_chunks,
+        coordinate_scales=coordinate_scales,
+        downsample_factors=downsample_factors
+    )
+
+
 def write_array_as_ome_zarr(
         array, dimension_str: str,
         output_path: str,
