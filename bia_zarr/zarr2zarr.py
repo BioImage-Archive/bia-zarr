@@ -73,11 +73,16 @@ def generate_write_config_from_input_image(input_image: OMEZarrImage) -> ZarrWri
     scale_transform = next(ct for ct in first_dataset.coordinateTransformations if ct.type == 'scale') # type: ignore
     coordinate_scales = scale_transform.scale
 
+    # Calculate number of pyramid levels from image shape
+    shape = (input_image.sizeT, input_image.sizeC, input_image.sizeZ, 
+            input_image.sizeY, input_image.sizeX)
+    n_pyramid_levels = derive_n_levels(shape)
 
     return ZarrWriteConfig(
         target_chunks=target_chunks,
         coordinate_scales=coordinate_scales,
         downsample_factors=downsample_factors,
+        n_pyramid_levels=n_pyramid_levels
     )
 
 
