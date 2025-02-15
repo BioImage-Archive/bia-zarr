@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from .proxyimage import open_ome_zarr_image, open_ome_zarr, OMEZarrImage
 from .omezarrtypes import get_ome_zarr_type, OMEZarrType
-from .write import write_array_as_ome_zarr, ZarrWriteConfig
+from .write import write_array_as_ome_zarr, ZarrWriteConfig, derive_n_levels
 
 
 def ensure_uri(uri: str) -> str:
@@ -61,36 +61,31 @@ def generate_write_config_from_input_image(input_image: OMEZarrImage) -> ZarrWri
     """
     # Set chunks based on whether we have a z dimension
     if input_image.sizeZ > 1:
-        chunks = [1, 1, 64, 64, 64]
+        target_chunks = [1, 1, 64, 64, 64]
+        # TODO - this calculation should probably be smarter (e.g. only downsample in z when z is bigger)
+        downsample_factors = [1, 1, 2, 2, 2]
     else:
-        chunks = [1, 1, 1, 1024, 1024]
+        target_chunks = [1, 1, 1, 1024, 1024]
+        downsample_factors = [1, 1, 1, 2, 2]
     
     # Get coordinate scales from the first dataset's transformations
     first_dataset = input_image.ngff_metadata.multiscales[0].datasets[0]
-    scale_transform = next(ct for ct in first_dataset.coordinateTransformations if ct.type == 'scale')
+    scale_transform = next(ct for ct in first_dataset.coordinateTransformations if ct.type == 'scale') # type: ignore
     coordinate_scales = scale_transform.scale
-    
-    # Get downsample factors from the ratios between consecutive levels
-    downsample_factors = []
-    datasets = input_image.ngff_metadata.multiscales[0].datasets
-    for i in range(len(datasets) - 1):
-        current_scale = datasets[i].coordinateTransformations[0].scale
-        next_scale = datasets[i + 1].coordinateTransformations[0].scale
-        # Use the Y scale factor as they should all be the same for X,Y
-        factor = int(next_scale[-2] / current_scale[-2])
-        downsample_factors.append(factor)
-    
+
+
     return ZarrWriteConfig(
-        chunks=chunks,
+        target_chunks=target_chunks,
         coordinate_scales=coordinate_scales,
-        downsample_factors=downsample_factors
+        downsample_factors=downsample_factors,
     )
 
 
 def zarr2zarr(
     ome_zarr_uri: str,
     output_base_dirpath: Path,
-    config: ZarrWriteConfig
+    config: Optional[ZarrWriteConfig] = None,
+    show_config_only: bool = False
 ):
     """Convert between OME-Zarr formats with optional transformations.
     
@@ -111,21 +106,21 @@ def zarr2zarr(
     ome_zarr_image = open_ome_zarr_image(ome_zarr_uri)
     if not ome_zarr_image.path_keys:
         raise ValueError("No arrays found in Zarr group")
-    
-    first_array_uri = f"{ome_zarr_uri}/{ome_zarr_image.path_keys[0]}"
-    source_array = open_zarr_array_with_ts(first_array_uri)
 
     # Generate write config from input image if none provided
     if not config:
         config = generate_write_config_from_input_image(ome_zarr_image)
+
+    if show_config_only:
+        rich.print(config)
+        return
     
+    first_array_uri = f"{ome_zarr_uri}/{ome_zarr_image.path_keys[0]}"
+    source_array = open_zarr_array_with_ts(first_array_uri)
+
     write_array_as_ome_zarr(
         array=source_array,
         dimension_str=ome_zarr_image.dimensions,
         output_path=str(output_base_dirpath),
-        zarr_version=2,
-        channel_labels=None,
-        chunks=config.chunks,
-        coordinate_scales=config.coordinate_scales,
-        downsample_factors=config.downsample_factors
+        write_config=config,
     )
