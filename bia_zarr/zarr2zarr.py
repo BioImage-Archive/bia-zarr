@@ -103,13 +103,12 @@ def zarr2zarr(
     if zarr_type not in (OMEZarrType.v04image, OMEZarrType.v05image):
         raise ValueError(f"Input URI must be an OME-Zarr v0.4 or v0.5 image, got {zarr_type}")
 
-    # Open the zarr group and get the first array
-    zarr_group = zarr.open_group(ome_zarr_uri, mode='r')
-    path_keys = [k for k in zarr_group.array_keys()]
-    if not path_keys:
+    # Open the OME-Zarr image
+    ome_zarr_image = open_ome_zarr_image(ome_zarr_uri)
+    if not ome_zarr_image.path_keys:
         raise ValueError("No arrays found in Zarr group")
     
-    first_array_uri = f"{ome_zarr_uri}/{path_keys[0]}"
+    first_array_uri = f"{ome_zarr_uri}/{ome_zarr_image.path_keys[0]}"
     source_array = open_zarr_array_with_ts(first_array_uri)
     
     # TODO: Implement conversion logic
