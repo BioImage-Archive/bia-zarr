@@ -1,6 +1,8 @@
 import rich
 import typer
-from typing import Tuple
+import json
+from typing import Tuple, Optional, Annotated
+from pathlib import Path
 
 from .proxyimage import open_ome_zarr_image
 from .rendering import generate_padded_thumbnail_from_ngff_uri
@@ -51,6 +53,19 @@ def thumbnail(
         channel_indices = [int(c) for c in channels.split(',')]
     im = generate_padded_thumbnail_from_ngff_uri(image_uri, dims=dimensions, channels=channel_indices)
     im.save(output)
+
+
+@app.command()
+def zarr2zarr(
+    ome_zarr_uri: str, 
+    output_base_dirpath: Path,
+    conversion_config: Annotated[Optional[str], typer.Argument()] = "{}"
+):
+    """Convert between OME-Zarr formats with optional transformations."""
+    from .zarr2zarr import zarr2zarr as _zarr2zarr, ZarrConversionConfig
+    
+    config = ZarrConversionConfig(**json.loads(conversion_config))
+    _zarr2zarr(ome_zarr_uri, output_base_dirpath, config)
 
 
 if __name__ == "__main__":

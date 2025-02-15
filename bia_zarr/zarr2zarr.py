@@ -42,9 +42,17 @@ class ZarrConversionConfig(BaseModel):
         description="Sharding size to use for Zarr v3"
     )
 
-@app.command()
 def zarr2zarr(
-    ome_zarr_uri: str, 
+    ome_zarr_uri: str,
     output_base_dirpath: Path,
-    conversion_config: Annotated[Optional[str], typer.Argument()] = "{}"
+    config: ZarrConversionConfig
 ):
+    """Convert between OME-Zarr formats with optional transformations.
+    
+    Args:
+        ome_zarr_uri: URI to input OME-Zarr image
+        output_base_dirpath: Path where output OME-Zarr will be written
+        config: Configuration for the conversion process
+    """
+    # TODO: Implement conversion logic
+    raise NotImplementedError("zarr2zarr conversion not yet implemented")
