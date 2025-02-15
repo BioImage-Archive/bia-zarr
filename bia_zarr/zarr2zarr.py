@@ -9,6 +9,8 @@ import tensorstore as ts
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
+from .proxyimage import open_ome_zarr_image, open_ome_zarr
+
 
 class ZarrConversionConfig(BaseModel):
     target_chunks: List[int] = Field(
