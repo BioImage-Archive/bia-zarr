@@ -50,6 +50,43 @@ def open_zarr_array_with_ts(input_array_uri: str):
     return source
 
 
+def generate_write_config_from_input_image(input_image: OMEZarrImage) -> ZarrWriteConfig:
+    """Generate ZarrWriteConfig from an input OME-Zarr image.
+    
+    Args:
+        input_image: OMEZarrImage object containing metadata about the input
+        
+    Returns:
+        ZarrWriteConfig configured based on input image properties
+    """
+    # Set chunks based on whether we have a z dimension
+    if input_image.sizeZ > 1:
+        chunks = [1, 1, 64, 64, 64]
+    else:
+        chunks = [1, 1, 1, 1024, 1024]
+    
+    # Get coordinate scales from the first dataset's transformations
+    first_dataset = input_image.ngff_metadata.multiscales[0].datasets[0]
+    scale_transform = next(ct for ct in first_dataset.coordinateTransformations if ct.type == 'scale')
+    coordinate_scales = scale_transform.scale
+    
+    # Get downsample factors from the ratios between consecutive levels
+    downsample_factors = []
+    datasets = input_image.ngff_metadata.multiscales[0].datasets
+    for i in range(len(datasets) - 1):
+        current_scale = datasets[i].coordinateTransformations[0].scale
+        next_scale = datasets[i + 1].coordinateTransformations[0].scale
+        # Use the Y scale factor as they should all be the same for X,Y
+        factor = int(next_scale[-2] / current_scale[-2])
+        downsample_factors.append(factor)
+    
+    return ZarrWriteConfig(
+        chunks=chunks,
+        coordinate_scales=coordinate_scales,
+        downsample_factors=downsample_factors
+    )
+
+
 def zarr2zarr(
     ome_zarr_uri: str,
     output_base_dirpath: Path,
@@ -78,13 +115,17 @@ def zarr2zarr(
     first_array_uri = f"{ome_zarr_uri}/{ome_zarr_image.path_keys[0]}"
     source_array = open_zarr_array_with_ts(first_array_uri)
 
+    # Generate write config from input image if none provided
+    if not config:
+        config = generate_write_config_from_input_image(ome_zarr_image)
+    
     write_array_as_ome_zarr(
         array=source_array,
         dimension_str=ome_zarr_image.dimensions,
         output_path=str(output_base_dirpath),
         zarr_version=2,
-        channel_labels=None
+        channel_labels=None,
+        chunks=config.chunks,
+        coordinate_scales=config.coordinate_scales,
+        downsample_factors=config.downsample_factors
     )
-    
-    # TODO: Implement conversion logic
-    # raise NotImplementedError("zarr2zarr conversion not yet implemented")
