@@ -28,8 +28,7 @@ class ZarrWriteConfig(BaseModel):
         default=[0, 1, 2, 3, 4],
         description="Order of axis transpositions to be applied during transformation."
     )
-    coordinate_scales: Optional[List[float]] = Field(
-        default=None,
+    coordinate_scales: List[float] = Field(
         description="Voxel to physical space coordinate scales for pyramid base level. If unset, will be copied from input OME-Zarr"
     )
     n_pyramid_levels: Optional[int] = Field(
@@ -117,21 +116,21 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
 
 
 # TODO - coordinate scales, omero block
-def generate_write_config_from_array(array, dimension_str: str) -> ZarrWriteConfig:
+def generate_write_config_from_array(array, coordinate_scales: Optional[List[float]] = None) -> ZarrWriteConfig:
     """Generate ZarrWriteConfig from an array and its dimension string.
     
     Args:
         array: Input array
-        dimension_str: String indicating dimension order (e.g. 'tczyx', 'cyx')
         
     Returns:
         ZarrWriteConfig configured based on array properties
     """
-    # Normalize array to 5D TCZYX
-    normalized_array = normalize_array_dimensions(array, dimension_str)
     
+    # Require TCZYX
+    assert len(array.shape) == 5
+
     # Set chunks based on whether we have a z dimension with size > 1
-    if normalized_array.shape[2] > 1:  # Z dimension is index 2 in TCZYX
+    if array.shape[2] > 1:  # Z dimension is index 2 in TCZYX
         target_chunks = [1, 1, 64, 64, 64]
         downsample_factors = [1, 1, 2, 2, 2]
     else:
@@ -139,7 +138,8 @@ def generate_write_config_from_array(array, dimension_str: str) -> ZarrWriteConf
         downsample_factors = [1, 1, 1, 2, 2]
     
     # Default coordinate scales (1.0 for each dimension)
-    coordinate_scales = [1.0] * 5
+    if not coordinate_scales:
+        coordinate_scales = [1.0] * 5
     
     return ZarrWriteConfig(
         target_chunks=target_chunks,
@@ -165,18 +165,16 @@ def write_array_as_ome_zarr(
     """
     # Normalize array to 5D TCZYX
     normalized_array = normalize_array_dimensions(array, dimension_str)
-    
+
     # Use default config if none provided
     if write_config is None:
-        write_config = ZarrWriteConfig()
+        write_config = generate_write_config_from_array(normalized_array)
     
     # Validate channel labels if provided
     if channel_labels is not None:
         if 'c' not in dimension_str.lower():
             raise ValueError("Channel labels provided but input has no channel dimension")
-        
 
-    
     if channel_labels is not None:
         n_channels = normalized_array.shape[1]  # C is second dimension in TCZYX
         if len(channel_labels) != n_channels:
@@ -204,11 +202,10 @@ def write_array_as_ome_zarr(
             write_config.target_chunks
         )
 
-    coordinate_scales = write_config.coordinate_scales or [1.0, 1.0, 1.0, 1.0, 1.0]
     ome_zarr_metadata = create_ome_zarr_metadata(
         output_path,
         "test_image",
-        coordinate_scales,
+        write_config.coordinate_scales,
         write_config.downsample_factors,
         create_omero_block=True,
         channel_labels=channel_labels

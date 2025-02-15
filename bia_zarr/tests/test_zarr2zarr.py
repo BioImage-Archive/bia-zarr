@@ -1,9 +1,10 @@
 import pytest
 from pathlib import Path
 
-from ..zarr2zarr import zarr2zarr, ZarrConversionConfig, generate_write_config_from_input_image
+from ..zarr2zarr import zarr2zarr, generate_write_config_from_input_image
 from ..omezarrmeta import OMEZarrMeta, MultiScaleImage, DataSet, CoordinateTransformation, Axis
 from ..proxyimage import OMEZarrImage
+from ..write import ZarrWriteConfig
 
 
 def test_zarr2zarr_raises_on_bf2rawtr():
@@ -12,7 +13,7 @@ def test_zarr2zarr_raises_on_bf2rawtr():
         zarr2zarr(
             "https://uk1s3.embassy.ebi.ac.uk/bia-zarr-test/S-BIAD144/IM1.zarr",
             Path("output"),
-            ZarrConversionConfig()
+            ZarrWriteConfig(coordinate_scales=[1.0]* 5)
         )
 
 
@@ -61,9 +62,9 @@ def test_generate_write_config_2d():
     
     config = generate_write_config_from_input_image(image)
     
-    assert config.chunks == [1, 1, 1, 1024, 1024]
+    assert config.target_chunks == [1, 1, 1, 1024, 1024]
     assert config.coordinate_scales == [1, 1, 0.5, 0.5]
-    assert config.downsample_factors == [2, 2]
+    assert config.downsample_factors == [1, 1, 1, 2, 2]
 
 
 def test_generate_write_config_3d():
@@ -87,6 +88,6 @@ def test_generate_write_config_3d():
     
     config = generate_write_config_from_input_image(image)
     
-    assert config.chunks == [1, 1, 64, 64, 64]
+    assert config.target_chunks == [1, 1, 64, 64, 64]
     assert config.coordinate_scales == [1, 1, 2, 0.5, 0.5]
-    assert config.downsample_factors == [2, 2]
+    assert config.downsample_factors == [1, 1, 2, 2, 2]

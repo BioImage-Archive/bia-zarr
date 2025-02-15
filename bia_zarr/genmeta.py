@@ -14,7 +14,7 @@ def create_ome_zarr_metadata(
         coordinate_scales: List[float],
         downsample_factors: List,
         create_omero_block: bool = False,
-        channel_labels: List[str] = None
+        channel_labels: Optional[List[str]] = None
     ) -> OMEZarrMeta:
     """Read a Zarr group and generate the OME-Zarr metadata for that group,
     effectively turning a group of Zarr arrays into an OME-Zarr.

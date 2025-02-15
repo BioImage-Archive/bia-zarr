@@ -59,13 +59,18 @@ def thumbnail(
 def zarr2zarr(
     ome_zarr_uri: str, 
     output_base_dirpath: Path,
-    conversion_config: Annotated[Optional[str], typer.Argument()] = "{}"
+    write_config: Annotated[Optional[str], typer.Argument()] = None,
+    show_config_only: bool = False
 ):
     """Convert between OME-Zarr formats with optional transformations."""
-    from .zarr2zarr import zarr2zarr as _zarr2zarr, ZarrConversionConfig
+    from .zarr2zarr import zarr2zarr as _zarr2zarr, ZarrWriteConfig
     
-    config = ZarrConversionConfig(**json.loads(conversion_config))
-    _zarr2zarr(ome_zarr_uri, output_base_dirpath, config)
+    if write_config:
+        config = ZarrWriteConfig(**json.loads(write_config)) # type: ignore
+    else:
+        config = None
+        
+    _zarr2zarr(ome_zarr_uri, output_base_dirpath, config, show_config_only)
 
 
 if __name__ == "__main__":

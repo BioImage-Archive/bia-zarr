@@ -49,7 +49,7 @@ def test_get_ome_zarr_type_unknown():
         "plate": {
             "wells": [{"path": "A/1"}]
         }
-    }, "http://example.com/plate.zarr", "http://example.com/plate.zarr/A/1"),
+    }, "http://example.com/plate.zarr", "http://example.com/plate.zarr/A/1/0"),
 ])
 def test_get_single_image_uri(zarr_format, attrs, base_uri, expected_uri):
     mock_group = MagicMock()
