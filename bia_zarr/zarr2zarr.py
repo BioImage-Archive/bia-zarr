@@ -11,7 +11,7 @@ import zarr
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
-from .proxyimage import open_ome_zarr_image, open_ome_zarr
+from .proxyimage import open_ome_zarr_image, open_ome_zarr, OMEZarrImage
 from .omezarrtypes import get_ome_zarr_type, OMEZarrType
 from .write import write_array_as_ome_zarr, ZarrWriteConfig
 
