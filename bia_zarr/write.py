@@ -209,7 +209,7 @@ def write_array_as_ome_zarr(
         output_path,
         "test_image",
         coordinate_scales,
-        downsample_factors,
+        write_config.downsample_factors,
         create_omero_block=True,
         channel_labels=channel_labels
     )
