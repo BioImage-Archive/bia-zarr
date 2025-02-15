@@ -64,8 +64,8 @@ def zarr2zarr(
     """
     # Check the type of the input
     zarr_type = get_ome_zarr_type(ome_zarr_uri)
-    if zarr_type != OMEZarrType.IMAGE:
-        raise ValueError(f"Input URI must be an OME-Zarr image, got {zarr_type}")
+    if zarr_type not in (OMEZarrType.v04image, OMEZarrType.v05image):
+        raise ValueError(f"Input URI must be an OME-Zarr v0.4 or v0.5 image, got {zarr_type}")
 
     # TODO: Implement conversion logic
     raise NotImplementedError("zarr2zarr conversion not yet implemented")
