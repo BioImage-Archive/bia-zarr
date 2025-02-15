@@ -164,13 +164,12 @@ def write_array_as_ome_zarr(
         array: Input array-like object
         dimension_str: String indicating dimension order (e.g. 'tczyx', 'cyx')
         output_path: Path to write the zarr store
-        chunks: Optional chunk size (defaults to [1,1,64,64,64])
-        zarr_version: Zarr format version (2 or 3, default 2)
+        write_config: Optional ZarrWriteConfig object for controlling output format
         channel_labels: Optional list of strings to label channels. Must match number of channels.
     """
-    # Default chunks if none provided
-    if chunks is None:
-        chunks = [1, 1, 64, 64, 64]
+    # Use default config if none provided
+    if write_config is None:
+        write_config = ZarrWriteConfig()
     
     # Validate channel labels if provided
     if channel_labels is not None:
@@ -186,17 +185,14 @@ def write_array_as_ome_zarr(
             raise ValueError(f"Number of channel labels ({len(channel_labels)}) does not match number of channels ({n_channels})")
     
     # Create zarr group at output path
-    group = zarr.open_group(output_path, mode='w', zarr_format=zarr_version)
+    group = zarr.open_group(output_path, mode='w', zarr_format=write_config.zarr_version)
 
     # Calculate number of pyramid levels needed
-    n_levels = derive_n_levels(normalized_array.shape)
-    
-    # Downsample factors for each dimension (T,C,Z,Y,X)
-    downsample_factors = [1, 1, 2, 2, 2]
+    n_levels = write_config.n_pyramid_levels or derive_n_levels(normalized_array.shape)
     
     # Write base level (level 0)
     current_path = f"{output_path}/0"
-    write_array_to_disk_chunked(normalized_array, current_path, chunks)
+    write_array_to_disk_chunked(normalized_array, current_path, write_config.target_chunks)
     
     # Generate subsequent pyramid levels
     for level in range(1, n_levels):
@@ -206,12 +202,11 @@ def write_array_as_ome_zarr(
         downsample_array_and_write_to_dirpath(
             prev_path,
             Path(current_path),
-            downsample_factors,
-            chunks
+            write_config.downsample_factors,
+            write_config.target_chunks
         )
 
-    # TODO - do this properly
-    coordinate_scales = [1.0, 1.0, 1.0, 1.0, 1.0]
+    coordinate_scales = write_config.coordinate_scales or [1.0, 1.0, 1.0, 1.0, 1.0]
     ome_zarr_metadata = create_ome_zarr_metadata(
         output_path,
         "test_image",
@@ -223,7 +218,7 @@ def write_array_as_ome_zarr(
 
     ome_metadata_dict = ome_zarr_metadata.model_dump(exclude_unset=True)
 
-    if zarr_version == 3:
+    if write_config.zarr_version == 3:
         ome_metadata_dict.update(
             {
                 "version": "0.5",
@@ -236,7 +231,7 @@ def write_array_as_ome_zarr(
             "ome": ome_metadata_dict
         }
         group.attrs.update(ome_metadata) # type: ignore
-    elif zarr_version == 2:
+    elif write_config.zarr_version == 2:
         group.attrs.update(ome_zarr_metadata.model_dump(exclude_unset=True)) # type: ignore
 
 
