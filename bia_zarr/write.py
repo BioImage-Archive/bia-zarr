@@ -36,10 +36,6 @@ class ZarrWriteConfig(BaseModel):
         default=None,
         description="Number of downsampled pyramid levels"
     )
-    # rewrite_omero_block: bool = Field(
-    #     default=False,
-    #     description="Rewrite the OMERO rendering block, guessing parameters. Otherwise will copy from input OME-Zarr."
-    # )
     zarr_version: int = Field(
         default=2,
         description="Version of Zarr to use for output (2 or 3)"
@@ -167,6 +163,9 @@ def write_array_as_ome_zarr(
         write_config: Optional ZarrWriteConfig object for controlling output format
         channel_labels: Optional list of strings to label channels. Must match number of channels.
     """
+    # Normalize array to 5D TCZYX
+    normalized_array = normalize_array_dimensions(array, dimension_str)
+    
     # Use default config if none provided
     if write_config is None:
         write_config = ZarrWriteConfig()
@@ -176,8 +175,7 @@ def write_array_as_ome_zarr(
         if 'c' not in dimension_str.lower():
             raise ValueError("Channel labels provided but input has no channel dimension")
         
-    # Normalize array to 5D TCZYX
-    normalized_array = normalize_array_dimensions(array, dimension_str)
+
     
     if channel_labels is not None:
         n_channels = normalized_array.shape[1]  # C is second dimension in TCZYX
