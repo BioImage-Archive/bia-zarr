@@ -1,7 +1,7 @@
 import time
 import itertools
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from datetime import timedelta
 from pathlib import Path
 
@@ -9,8 +9,45 @@ import numpy as np
 import rich
 import zarr
 import tensorstore as ts
+from pydantic import BaseModel, Field
 
 from .genmeta import create_ome_zarr_metadata
+
+
+
+class ZarrWriteConfig(BaseModel):
+    target_chunks: List[int] = Field(
+        default=[1, 1, 64, 64, 64],
+        description="Array chunk layout for output zarr"
+    )
+    downsample_factors: List[int] = Field(
+        default=[1, 1, 2, 2, 2],
+        description="Factor by which each successive pyramid layer will be downsampled"
+    )
+    transpose_axes: List[int] = Field(
+        default=[0, 1, 2, 3, 4],
+        description="Order of axis transpositions to be applied during transformation."
+    )
+    coordinate_scales: Optional[List[float]] = Field(
+        default=None,
+        description="Voxel to physical space coordinate scales for pyramid base level. If unset, will be copied from input OME-Zarr"
+    )
+    n_pyramid_levels: Optional[int] = Field(
+        default=None,
+        description="Number of downsampled pyramid levels"
+    )
+    # rewrite_omero_block: bool = Field(
+    #     default=False,
+    #     description="Rewrite the OMERO rendering block, guessing parameters. Otherwise will copy from input OME-Zarr."
+    # )
+    zarr_version: int = Field(
+        default=2,
+        description="Version of Zarr to use for output (2 or 3)"
+    )
+    shard_size: List[int] = Field(
+        default=[1, 1, 128, 128, 128],
+        description="Sharding size to use for Zarr v3"
+    )
 
 
 def derive_n_levels(shape: Tuple[int, ...]) -> int:
@@ -84,7 +121,12 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
 
 
 # TODO - coordinate scales, omero block
-def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=None, zarr_version: int = 2, channel_labels: List[str] = None):
+def write_array_as_ome_zarr(
+        array, dimension_str: str,
+        output_path: str,
+        write_config: Optional[ZarrWriteConfig] = None,
+        channel_labels: Optional[List[str]] = None
+):
     """Write an array as OME-ZARR, normalizing dimensions to TCZYX format.
     
     Args:
@@ -167,10 +209,6 @@ def write_array_as_ome_zarr(array, dimension_str: str, output_path: str, chunks=
         group.attrs.update(ome_zarr_metadata.model_dump(exclude_unset=True)) # type: ignore
 
 
-
-
-
-
 def downsample_array_and_write_to_dirpath(
         array_uri: str,
         output_dirpath: Path,
@@ -222,7 +260,6 @@ def downsample_array_and_write_to_dirpath(
     }).result()
 
     write_array_to_disk_chunked(source, output_dirpath, output_chunks)
-
 
 
 def write_array_to_disk_chunked(source_array, output_dirpath, target_chunks):
