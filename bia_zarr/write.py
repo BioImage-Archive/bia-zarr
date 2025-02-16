@@ -63,7 +63,7 @@ def derive_n_levels(shape: Tuple[int, ...]) -> int:
     return n_levels + 1  # Add 1 to include the base level
 
 
-def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
+def normalize_np_array_dimensions(array, dimension_str: str) -> np.ndarray:
     """Normalize input array to 5D TCZYX format.
     
     Args:
@@ -73,12 +73,12 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
     Returns:
         5D array with dimensions ordered as TCZYX, with size 1 for missing dimensions
     """
-    # Convert input array to numpy if needed
-    arr = np.asarray(array)
+    # # Convert input array to numpy if needed
+    # arr = np.asarray(array)
     
     # Verify dimension string matches array rank
-    if len(dimension_str) != arr.ndim:
-        raise ValueError(f"Dimension string {dimension_str} does not match array rank {arr.ndim}")
+    if len(dimension_str) != array.ndim:
+        raise ValueError(f"Dimension string {dimension_str} does not match array rank {array.ndim}")
         
     # Convert to lowercase for comparison
     dims = dimension_str.lower()
@@ -109,10 +109,10 @@ def normalize_array_dimensions(array, dimension_str: str) -> np.ndarray:
         if dim not in dim_to_pos:
             raise ValueError(f"Invalid dimension '{dim}', must be one of 'tczyx'")
         pos = dim_to_pos[dim]
-        new_shape[pos] = arr.shape[i]
+        new_shape[pos] = array.shape[i]
     
     # Just reshape - no transpose needed since dimensions are in correct order
-    return arr.reshape(tuple(new_shape))
+    return array.reshape(tuple(new_shape))
 
 
 # TODO - coordinate scales, omero block
@@ -149,7 +149,8 @@ def generate_write_config_from_array(array, coordinate_scales: Optional[List[flo
 
 
 def write_array_as_ome_zarr(
-        array, dimension_str: str,
+        array,
+        dimension_str: str,
         output_path: str,
         write_config: Optional[ZarrWriteConfig] = None,
         channel_labels: Optional[List[str]] = None
@@ -163,8 +164,15 @@ def write_array_as_ome_zarr(
         write_config: Optional ZarrWriteConfig object for controlling output format
         channel_labels: Optional list of strings to label channels. Must match number of channels.
     """
-    # Normalize array to 5D TCZYX
-    normalized_array = normalize_array_dimensions(array, dimension_str)
+
+    # TODO - we only handle tensorstore arrays if they're already TCZYX. Fixing the dimensions for TS
+    # arrays is fiddlier, but we should do it sometime
+    if hasattr(array, 'read'):
+        assert (len(array.shape) == 5) and (dimension_str == 'tczyx')
+        normalized_array = array
+    else:
+        # Normalize array to 5D TCZYX
+        normalized_array = normalize_np_array_dimensions(array, dimension_str)
 
     # Use default config if none provided
     if write_config is None:
